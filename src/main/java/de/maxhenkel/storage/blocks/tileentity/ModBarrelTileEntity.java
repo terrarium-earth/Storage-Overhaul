@@ -3,29 +3,29 @@ package de.maxhenkel.storage.blocks.tileentity;
 import de.maxhenkel.corelib.sound.SoundUtils;
 import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.blocks.ModBarrelBlock;
-import net.minecraft.block.BarrelBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SUpdateTileEntityPacket;
-import net.minecraft.tileentity.ChestTileEntity;
-import net.minecraft.tileentity.LockableLootTileEntity;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvent;
-import net.minecraft.util.SoundEvents;
-import net.minecraft.util.math.vector.Vector3i;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.level.block.BarrelBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.core.NonNullList;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
-public class ModBarrelTileEntity extends LockableLootTileEntity {
+public class ModBarrelTileEntity extends RandomizableContainerBlockEntity {
 
     @Nullable
     private NonNullList<ItemStack> barrelContents;
@@ -52,27 +52,27 @@ public class ModBarrelTileEntity extends LockableLootTileEntity {
     }
 
     @Override
-    public CompoundNBT save(CompoundNBT compound) {
+    public CompoundTag save(CompoundTag compound) {
         super.save(compound);
 
         compound.putInt("Tier", getTier().getTier());
 
         if (!trySaveLootTable(compound)) {
-            ItemStackHelper.saveAllItems(compound, getItems());
+            ContainerHelper.saveAllItems(compound, getItems());
         }
 
         return compound;
     }
 
     @Override
-    public void load(BlockState blockState, CompoundNBT compound) {
+    public void load(BlockState blockState, CompoundTag compound) {
         super.load(blockState, compound);
 
         tier = ChestTier.byTier(compound.getInt("Tier"));
 
         barrelContents = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
         if (!tryLoadLootTable(compound)) {
-            ItemStackHelper.loadAllItems(compound, barrelContents);
+            ContainerHelper.loadAllItems(compound, barrelContents);
         }
     }
 
@@ -87,12 +87,12 @@ public class ModBarrelTileEntity extends LockableLootTileEntity {
     }
 
     @Override
-    protected Container createMenu(int id, PlayerInventory player) {
+    protected AbstractContainerMenu createMenu(int id, Inventory player) {
         return getTier().getContainer(id, player, this);
     }
 
     @Override
-    public void startOpen(PlayerEntity player) {
+    public void startOpen(Player player) {
         if (!player.isSpectator()) {
             if (numPlayersUsing < 0) {
                 numPlayersUsing = 0;
@@ -117,7 +117,7 @@ public class ModBarrelTileEntity extends LockableLootTileEntity {
         int x = worldPosition.getX();
         int y = worldPosition.getY();
         int z = worldPosition.getZ();
-        numPlayersUsing = ChestTileEntity.getOpenCount(level, this, x, y, z);
+        numPlayersUsing = ChestBlockEntity.getOpenCount(level, this, x, y, z);
         if (numPlayersUsing > 0) {
             scheduleTick();
         } else {
@@ -137,7 +137,7 @@ public class ModBarrelTileEntity extends LockableLootTileEntity {
     }
 
     @Override
-    public void stopOpen(PlayerEntity player) {
+    public void stopOpen(Player player) {
         if (!player.isSpectator()) {
             numPlayersUsing--;
         }
@@ -148,31 +148,31 @@ public class ModBarrelTileEntity extends LockableLootTileEntity {
     }
 
     private void playSound(BlockState blockState, SoundEvent soundEvent) {
-        Vector3i vec3i = blockState.getValue(BarrelBlock.FACING).getNormal();
+        Vec3i vec3i = blockState.getValue(BarrelBlock.FACING).getNormal();
         double x = (double) this.worldPosition.getX() + 0.5D + (double) vec3i.getX() / 2D;
         double y = (double) this.worldPosition.getY() + 0.5D + (double) vec3i.getY() / 2D;
         double z = (double) this.worldPosition.getZ() + 0.5D + (double) vec3i.getZ() / 2D;
-        level.playSound(null, x, y, z, soundEvent, SoundCategory.BLOCKS, 0.5F, SoundUtils.getVariatedPitch(level));
+        level.playSound(null, x, y, z, soundEvent, SoundSource.BLOCKS, 0.5F, SoundUtils.getVariatedPitch(level));
     }
 
     @Override
-    protected ITextComponent getDefaultName() {
-        return new TranslationTextComponent(getBlockState().getBlock().getDescriptionId());
+    protected Component getDefaultName() {
+        return new TranslatableComponent(getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
-    public SUpdateTileEntityPacket getUpdatePacket() {
-        return new SUpdateTileEntityPacket(worldPosition, 1, getUpdateTag());
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return new ClientboundBlockEntityDataPacket(worldPosition, 1, getUpdateTag());
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
         load(getBlockState(), pkt.getTag());
     }
 
     @Override
-    public CompoundNBT getUpdateTag() {
-        return save(new CompoundNBT());
+    public CompoundTag getUpdateTag() {
+        return save(new CompoundTag());
     }
 
 }

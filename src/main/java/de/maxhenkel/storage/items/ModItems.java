@@ -2,7 +2,7 @@ package de.maxhenkel.storage.items;
 
 import de.maxhenkel.storage.Main;
 import de.maxhenkel.storage.blocks.ModBlocks;
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.event.RegistryEvent;
 
 public class ModItems {

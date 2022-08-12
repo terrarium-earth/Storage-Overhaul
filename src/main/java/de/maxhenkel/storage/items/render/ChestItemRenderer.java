@@ -1,20 +1,20 @@
 package de.maxhenkel.storage.items.render;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.blocks.tileentity.ModChestTileEntity;
 import de.maxhenkel.storage.blocks.tileentity.render.ModChestRenderer;
-import net.minecraft.block.WoodType;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.model.ItemCameraTransforms;
-import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.level.block.state.properties.WoodType;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
-public class ChestItemRenderer extends ItemStackTileEntityRenderer {
+public class ChestItemRenderer extends BlockEntityWithoutLevelRenderer {
 
     private ModChestRenderer renderer;
     private ModChestTileEntity tileEntity;
@@ -24,9 +24,9 @@ public class ChestItemRenderer extends ItemStackTileEntityRenderer {
     }
 
     @Override
-    public void renderByItem(ItemStack itemStackIn, ItemCameraTransforms.TransformType transformType, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedLightIn, int combinedOverlayIn) {
+    public void renderByItem(ItemStack itemStackIn, ItemTransforms.TransformType transformType, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
         if (renderer == null) {
-            renderer = new ModChestRenderer(TileEntityRendererDispatcher.instance);
+            renderer = new ModChestRenderer(BlockEntityRenderDispatcher.instance);
         }
         renderer.render(tileEntity, 1F, matrixStackIn, bufferIn, combinedLightIn, combinedOverlayIn);
     }

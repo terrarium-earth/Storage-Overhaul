@@ -1,21 +1,21 @@
 package de.maxhenkel.storage.gui;
 
 import de.maxhenkel.corelib.inventory.ContainerBase;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.inventory.container.Slot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 
 public class HugeChestContainer extends ContainerBase {
 
     private static final int NUM_COLS = 18;
     private static final int NUM_PLAYER_INV_COLS = 9;
-    private final IInventory inventory;
+    private final Container inventory;
     private final int numRows;
 
-    public HugeChestContainer(ContainerType type, int id, PlayerInventory playerInventory, IInventory inventory, int numRows) {
+    public HugeChestContainer(MenuType type, int id, Inventory playerInventory, Container inventory, int numRows) {
         super(type, id, playerInventory, inventory);
         this.inventory = inventory;
         this.numRows = numRows;
@@ -40,8 +40,8 @@ public class HugeChestContainer extends ContainerBase {
         }
     }
 
-    public HugeChestContainer(ContainerType type, int id, PlayerInventory playerInventory, int numRows) {
-        this(type, id, playerInventory, new Inventory(numRows * NUM_COLS), numRows);
+    public HugeChestContainer(MenuType type, int id, Inventory playerInventory, int numRows) {
+        this(type, id, playerInventory, new SimpleContainer(numRows * NUM_COLS), numRows);
     }
 
     public int getNumRows() {
@@ -49,7 +49,7 @@ public class HugeChestContainer extends ContainerBase {
     }
 
     @Override
-    public boolean stillValid(PlayerEntity playerIn) {
+    public boolean stillValid(Player playerIn) {
         return inventory.stillValid(playerIn);
     }
 

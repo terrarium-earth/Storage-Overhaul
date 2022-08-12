@@ -3,16 +3,16 @@ package de.maxhenkel.storage.gui;
 import de.maxhenkel.corelib.inventory.ContainerBase;
 import de.maxhenkel.corelib.inventory.LockedSlot;
 import de.maxhenkel.storage.items.AdvancedShulkerBoxItem;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.Container;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionHand;
 
 public class AdvancedShulkerboxContainer extends ContainerBase {
 
-    public AdvancedShulkerboxContainer(int id, PlayerInventory playerInventory, IInventory shulkerboxInventory) {
+    public AdvancedShulkerboxContainer(int id, Inventory playerInventory, Container shulkerboxInventory) {
         super(Containers.SHULKERBOX_CONTAINER, id, playerInventory, shulkerboxInventory);
 
         for (int y = 0; y < 3; y++) {
@@ -39,24 +39,24 @@ public class AdvancedShulkerboxContainer extends ContainerBase {
         }
     }
 
-    public AdvancedShulkerboxContainer(int id, PlayerInventory playerInventory) {
+    public AdvancedShulkerboxContainer(int id, Inventory playerInventory) {
         this(id, playerInventory, new ShulkerBoxItemInventory(playerInventory.player, getShulkerBox(playerInventory.player)));
     }
 
-    public static int getLockedSlot(PlayerEntity player) {
-        ItemStack stack = player.getItemInHand(Hand.MAIN_HAND);
+    public static int getLockedSlot(Player player) {
+        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
         if (isOpenableShulkerBox(stack)) {
-            return player.inventory.selected;
+            return player.getInventory().selected;
         }
         return -1;
     }
 
-    public static ItemStack getShulkerBox(PlayerEntity player) {
-        ItemStack stack = player.getItemInHand(Hand.MAIN_HAND);
+    public static ItemStack getShulkerBox(Player player) {
+        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
         if (isOpenableShulkerBox(stack)) {
             return stack;
         }
-        stack = player.getItemInHand(Hand.OFF_HAND);
+        stack = player.getItemInHand(InteractionHand.OFF_HAND);
         if (isOpenableShulkerBox(stack)) {
             return stack;
         }

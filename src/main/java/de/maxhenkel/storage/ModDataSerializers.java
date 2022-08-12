@@ -1,21 +1,21 @@
 package de.maxhenkel.storage;
 
-import net.minecraft.block.Block;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.network.datasync.IDataSerializer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class ModDataSerializers {
 
-    public static final IDataSerializer<Block> BLOCK = new IDataSerializer<Block>() {
+    public static final EntityDataSerializer<Block> BLOCK = new EntityDataSerializer<Block>() {
 
         @Override
-        public void write(PacketBuffer buf, Block value) {
+        public void write(FriendlyByteBuf buf, Block value) {
             buf.writeResourceLocation(value.getRegistryName());
         }
 
         @Override
-        public Block read(PacketBuffer buf) {
+        public Block read(FriendlyByteBuf buf) {
             return ForgeRegistries.BLOCKS.getValue(buf.readResourceLocation());
         }
 

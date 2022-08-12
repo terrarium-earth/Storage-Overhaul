@@ -3,19 +3,19 @@ package de.maxhenkel.storage.blocks.tileentity;
 import de.maxhenkel.corelib.entity.EntityUtils;
 import de.maxhenkel.corelib.item.ItemUtils;
 import de.maxhenkel.storage.Main;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SUpdateTileEntityPacket;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.INameable;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.core.Direction;
+import net.minecraft.world.Nameable;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -26,10 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class StorageBarrelTileEntity extends TileEntity implements IItemHandler, INameable {
+public class StorageBarrelTileEntity extends BlockEntity implements IItemHandler, Nameable {
 
     private ItemStack barrelContent = ItemStack.EMPTY;
-    private ITextComponent customName;
+    private Component customName;
 
     private Map<UUID, Long> clicks;
 
@@ -38,7 +38,7 @@ public class StorageBarrelTileEntity extends TileEntity implements IItemHandler,
         clicks = new HashMap<>();
     }
 
-    public boolean onInsert(PlayerEntity player) {
+    public boolean onInsert(Player player) {
         boolean flag = false;
         if (level.getGameTime() - clicks.getOrDefault(player.getUUID(), 0L) <= 4) {
             flag = true;
@@ -50,36 +50,36 @@ public class StorageBarrelTileEntity extends TileEntity implements IItemHandler,
     @Override
     public void setChanged() {
         super.setChanged();
-        if (level instanceof ServerWorld) {
-            EntityUtils.forEachPlayerAround((ServerWorld) level, getBlockPos(), 128D, this::syncContents);
+        if (level instanceof ServerLevel) {
+            EntityUtils.forEachPlayerAround((ServerLevel) level, getBlockPos(), 128D, this::syncContents);
         }
     }
 
-    public void syncContents(ServerPlayerEntity player) {
+    public void syncContents(ServerPlayer player) {
         player.connection.send(getUpdatePacket());
     }
 
     @Override
-    public CompoundNBT save(CompoundNBT compound) {
+    public CompoundTag save(CompoundTag compound) {
         super.save(compound);
 
-        compound.put("Item", ItemUtils.writeOverstackedItem(new CompoundNBT(), barrelContent));
+        compound.put("Item", ItemUtils.writeOverstackedItem(new CompoundTag(), barrelContent));
 
         if (this.customName != null) {
-            compound.putString("CustomName", ITextComponent.Serializer.toJson(customName));
+            compound.putString("CustomName", Component.Serializer.toJson(customName));
         }
 
         return compound;
     }
 
     @Override
-    public void load(BlockState blockState, CompoundNBT compound) {
+    public void load(BlockState blockState, CompoundTag compound) {
         super.load(blockState, compound);
         barrelContent = ItemUtils.readOverstackedItem(compound.getCompound("Item"));
 
 
         if (compound.contains("CustomName")) {
-            customName = ITextComponent.Serializer.fromJson(compound.getString("CustomName"));
+            customName = Component.Serializer.fromJson(compound.getString("CustomName"));
         }
     }
 
@@ -172,33 +172,33 @@ public class StorageBarrelTileEntity extends TileEntity implements IItemHandler,
         return true;
     }
 
-    public void setCustomName(ITextComponent customName) {
+    public void setCustomName(Component customName) {
         this.customName = customName;
     }
 
     @Override
-    public ITextComponent getName() {
-        return customName != null ? customName : new TranslationTextComponent(getBlockState().getBlock().getDescriptionId());
+    public Component getName() {
+        return customName != null ? customName : new TranslatableComponent(getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
-    public ITextComponent getDisplayName() {
+    public Component getDisplayName() {
         return getName();
     }
 
     @Override
-    public SUpdateTileEntityPacket getUpdatePacket() {
-        return new SUpdateTileEntityPacket(worldPosition, 1, getUpdateTag());
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return new ClientboundBlockEntityDataPacket(worldPosition, 1, getUpdateTag());
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
         load(getBlockState(), pkt.getTag());
     }
 
     @Override
-    public CompoundNBT getUpdateTag() {
-        return save(new CompoundNBT());
+    public CompoundTag getUpdateTag() {
+        return save(new CompoundTag());
     }
 
     @Override

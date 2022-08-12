@@ -2,43 +2,49 @@ package de.maxhenkel.storage.blocks.tileentity;
 
 import de.maxhenkel.corelib.sound.SoundUtils;
 import de.maxhenkel.storage.blocks.AdvancedShulkerBoxBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.ISidedInventory;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ShulkerBoxContainer;
-import net.minecraft.item.DyeColor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.tileentity.ITickableTileEntity;
-import net.minecraft.tileentity.LockableLootTileEntity;
-import net.minecraft.tileentity.ShulkerBoxTileEntity;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ShulkerBoxMenu;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.block.entity.TickableBlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.util.*;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.shapes.VoxelShapes;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
 
 import javax.annotation.Nullable;
 import java.util.stream.IntStream;
 
-public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implements ISidedInventory, ITickableTileEntity {
+import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+
+public class AdvancedShulkerBoxTileEnitity extends RandomizableContainerBlockEntity implements WorldlyContainer, TickableBlockEntity {
 
     private static final int[] SLOTS = IntStream.range(0, 27).toArray();
     private NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
     private int openCount;
-    private ShulkerBoxTileEntity.AnimationStatus animationStatus = ShulkerBoxTileEntity.AnimationStatus.CLOSED;
+    private ShulkerBoxBlockEntity.AnimationStatus animationStatus = ShulkerBoxBlockEntity.AnimationStatus.CLOSED;
     private float progress;
     private float progressOld;
-    private INBT enchantments;
+    private Tag enchantments;
 
     @Nullable
     private DyeColor color;
@@ -58,7 +64,7 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
             case OPENING:
                 progress += 0.25F;
                 if (progress >= 1F) {
-                    animationStatus = ShulkerBoxTileEntity.AnimationStatus.OPENED;
+                    animationStatus = ShulkerBoxBlockEntity.AnimationStatus.OPENED;
                     progress = 1F;
                     updateNeighbors();
                 }
@@ -66,7 +72,7 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
             case CLOSING:
                 progress -= 0.25F;
                 if (progress <= 0F) {
-                    animationStatus = ShulkerBoxTileEntity.AnimationStatus.CLOSED;
+                    animationStatus = ShulkerBoxBlockEntity.AnimationStatus.CLOSED;
                     progress = 0F;
                     updateNeighbors();
                 }
@@ -77,9 +83,9 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
     }
 
     public boolean canOpen() {
-        if (animationStatus == ShulkerBoxTileEntity.AnimationStatus.CLOSED) {
+        if (animationStatus == ShulkerBoxBlockEntity.AnimationStatus.CLOSED) {
             Direction direction = getBlockState().getValue(AdvancedShulkerBoxBlock.FACING);
-            AxisAlignedBB axisalignedbb = VoxelShapes.block().bounds().expandTowards(0.5F * (float) direction.getStepX(), 0.5F * (float) direction.getStepY(), 0.5F * (float) direction.getStepZ()).contract(direction.getStepX(), direction.getStepY(), direction.getStepZ());
+            AABB axisalignedbb = Shapes.block().bounds().expandTowards(0.5F * (float) direction.getStepX(), 0.5F * (float) direction.getStepY(), 0.5F * (float) direction.getStepZ()).contract(direction.getStepX(), direction.getStepY(), direction.getStepZ());
             return level.noCollision(axisalignedbb.move(worldPosition.relative(direction)));
         } else {
             return true;
@@ -96,12 +102,12 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
         if (id == 1) {
             openCount = type;
             if (type == 0) {
-                animationStatus = ShulkerBoxTileEntity.AnimationStatus.CLOSING;
+                animationStatus = ShulkerBoxBlockEntity.AnimationStatus.CLOSING;
                 updateNeighbors();
             }
 
             if (type == 1) {
-                animationStatus = ShulkerBoxTileEntity.AnimationStatus.OPENING;
+                animationStatus = ShulkerBoxBlockEntity.AnimationStatus.OPENING;
                 updateNeighbors();
             }
 
@@ -116,7 +122,7 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
     }
 
     @Override
-    public void startOpen(PlayerEntity player) {
+    public void startOpen(Player player) {
         if (!player.isSpectator()) {
             if (openCount < 0) {
                 openCount = 0;
@@ -125,7 +131,7 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
             openCount++;
             level.blockEvent(worldPosition, getBlockState().getBlock(), 1, openCount);
             if (openCount == 1) {
-                level.playSound(null, worldPosition, getOpenSound(), SoundCategory.BLOCKS, 0.5F, SoundUtils.getVariatedPitch(level));
+                level.playSound(null, worldPosition, getOpenSound(), SoundSource.BLOCKS, 0.5F, SoundUtils.getVariatedPitch(level));
             }
         }
 
@@ -140,48 +146,48 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
     }
 
     @Override
-    public void stopOpen(PlayerEntity player) {
+    public void stopOpen(Player player) {
         if (!player.isSpectator()) {
             openCount--;
             level.blockEvent(worldPosition, getBlockState().getBlock(), 1, openCount);
             if (openCount <= 0) {
-                level.playSound(null, worldPosition, getCloseSound(), SoundCategory.BLOCKS, 0.5F, SoundUtils.getVariatedPitch(level));
+                level.playSound(null, worldPosition, getCloseSound(), SoundSource.BLOCKS, 0.5F, SoundUtils.getVariatedPitch(level));
             }
         }
 
     }
 
     @Override
-    protected ITextComponent getDefaultName() {
-        return new TranslationTextComponent(getBlockState().getBlock().getDescriptionId());
+    protected Component getDefaultName() {
+        return new TranslatableComponent(getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
-    public void load(BlockState blockState, CompoundNBT compound) {
+    public void load(BlockState blockState, CompoundTag compound) {
         super.load(blockState, compound);
         loadFromNbt(compound);
     }
 
     @Override
-    public CompoundNBT save(CompoundNBT compound) {
+    public CompoundTag save(CompoundTag compound) {
         super.save(compound);
         return saveToNbt(compound);
     }
 
-    public void loadFromNbt(CompoundNBT compound) {
+    public void loadFromNbt(CompoundTag compound) {
         items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
         if (!tryLoadLootTable(compound) && compound.contains("Items", 9)) {
-            ItemStackHelper.loadAllItems(compound, items);
+            ContainerHelper.loadAllItems(compound, items);
         }
-        INBT enchantmentsNbt = compound.get("Enchantments");
+        Tag enchantmentsNbt = compound.get("Enchantments");
         if (enchantmentsNbt != null) {
             enchantments = enchantmentsNbt.copy();
         }
     }
 
-    public CompoundNBT saveToNbt(CompoundNBT compound) {
+    public CompoundTag saveToNbt(CompoundTag compound) {
         if (!trySaveLootTable(compound)) {
-            ItemStackHelper.saveAllItems(compound, items, false);
+            ContainerHelper.saveAllItems(compound, items, false);
         }
         if (enchantments != null) {
             compound.put("Enchantments", enchantments);
@@ -189,8 +195,8 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
         return compound;
     }
 
-    public void readFromItemStackNbt(CompoundNBT nbtIn) {
-        INBT nbt = nbtIn.get("Enchantments");
+    public void readFromItemStackNbt(CompoundTag nbtIn) {
+        Tag nbt = nbtIn.get("Enchantments");
         if (nbt != null) {
             this.enchantments = nbt.copy();
         }
@@ -222,7 +228,7 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
     }
 
     public float getProgress(float partialTicks) {
-        return MathHelper.lerp(partialTicks, progressOld, progress);
+        return Mth.lerp(partialTicks, progressOld, progress);
     }
 
     public DyeColor getColor() {
@@ -233,8 +239,8 @@ public class AdvancedShulkerBoxTileEnitity extends LockableLootTileEntity implem
     }
 
     @Override
-    protected Container createMenu(int id, PlayerInventory player) {
-        return new ShulkerBoxContainer(id, player, this);
+    protected AbstractContainerMenu createMenu(int id, Inventory player) {
+        return new ShulkerBoxMenu(id, player, this);
     }
 
     @Override

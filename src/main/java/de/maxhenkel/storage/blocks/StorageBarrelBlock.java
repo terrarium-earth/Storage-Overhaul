@@ -6,32 +6,42 @@ import de.maxhenkel.corelib.item.ItemUtils;
 import de.maxhenkel.corelib.sound.SoundUtils;
 import de.maxhenkel.storage.Main;
 import de.maxhenkel.storage.blocks.tileentity.StorageBarrelTileEntity;
-import net.minecraft.block.*;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.item.*;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.Nullable;
 
-public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
+public class StorageBarrelBlock extends BaseEntityBlock implements IItemBlock {
 
     private static final DirectionalVoxelShape SHAPES = new DirectionalVoxelShape.Builder()
             .direction(Direction.NORTH,
@@ -88,7 +98,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
 
     @Override
     public Item toItem() {
-        return new BlockItem(this, new Item.Properties().tab(ItemGroup.TAB_DECORATIONS)).setRegistryName(getRegistryName());
+        return new BlockItem(this, new Item.Properties().tab(CreativeModeTab.TAB_DECORATIONS)).setRegistryName(getRegistryName());
     }
 
     @SubscribeEvent
@@ -107,29 +117,29 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public ActionResultType use(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
+    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         if (!hit.getDirection().equals(state.getValue(PROPERTY_FACING))) {
-            return ActionResultType.PASS;
+            return InteractionResult.PASS;
         }
 
         if (worldIn.isClientSide) {
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
-        TileEntity tileentity = worldIn.getBlockEntity(pos);
+        BlockEntity tileentity = worldIn.getBlockEntity(pos);
         if (!(tileentity instanceof StorageBarrelTileEntity)) {
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
         StorageBarrelTileEntity barrel = (StorageBarrelTileEntity) tileentity;
 
         if (barrel.onInsert(player)) {
             boolean inserted = false;
-            for (int i = 0; i < player.inventory.getContainerSize(); i++) {
-                ItemStack stack = player.inventory.getItem(i);
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack stack = player.getInventory().getItem(i);
                 ItemStack rest = barrel.insertItem(0, stack, false);
                 if (!ItemStack.matches(rest, stack)) {
-                    player.inventory.setItem(i, rest);
+                    player.getInventory().setItem(i, rest);
                     inserted = true;
                 }
             }
@@ -137,7 +147,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
             if (inserted) {
                 playInsertSound(worldIn, player);
             }
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
         ItemStack held = player.getItemInHand(handIn);
@@ -145,36 +155,36 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
         ItemStack remaining = barrel.insertItem(0, held, false);
 
         if (ItemStack.matches(remaining, held)) {
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
         held.setCount(remaining.getCount());
         playInsertSound(worldIn, player);
 
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
-    public void playInsertSound(World world, PlayerEntity player) {
-        world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_PICKUP, SoundCategory.PLAYERS, 0.5F, SoundUtils.getVariatedPitch(world));
+    public void playInsertSound(Level world, Player player) {
+        world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.5F, SoundUtils.getVariatedPitch(world));
     }
 
-    public void playExtractSound(World world, PlayerEntity player) {
-        world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_PICKUP, SoundCategory.PLAYERS, 0.5F, world.random.nextFloat() * 0.1F + 1.3F);
+    public void playExtractSound(Level world, Player player) {
+        world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.5F, world.random.nextFloat() * 0.1F + 1.3F);
     }
 
     @Override
-    public void attack(BlockState state, World worldIn, BlockPos pos, PlayerEntity player) {
+    public void attack(BlockState state, Level worldIn, BlockPos pos, Player player) {
         super.attack(state, worldIn, pos, player);
         if (!player.isCreative()) {
             onFrontClicked(state, worldIn, pos, player);
         }
     }
 
-    public void onFrontClicked(BlockState state, World worldIn, BlockPos pos, PlayerEntity player) {
+    public void onFrontClicked(BlockState state, Level worldIn, BlockPos pos, Player player) {
         if (worldIn.isClientSide) {
             return;
         }
-        TileEntity tileentity = worldIn.getBlockEntity(pos);
+        BlockEntity tileentity = worldIn.getBlockEntity(pos);
         if (!(tileentity instanceof StorageBarrelTileEntity)) {
             return;
         }
@@ -195,7 +205,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
             ItemStack newItem = barrelContent.copy();
             newItem.setCount(amount);
             barrel.removeCount(amount);
-            player.inventory.add(player.inventory.selected, newItem);
+            player.getInventory().add(player.getInventory().selected, newItem);
             playExtractSound(worldIn, player);
             return;
         } else if (ItemUtils.isStackable(heldItem, barrelContent)) {
@@ -206,7 +216,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
                 ItemStack newItem = heldItem.copy();
                 newItem.setCount(amount);
                 barrel.removeCount(amount);
-                player.inventory.add(player.inventory.selected, newItem);
+                player.getInventory().add(player.getInventory().selected, newItem);
                 playExtractSound(worldIn, player);
                 return;
             }
@@ -216,7 +226,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
         newItem.setCount(amount);
         barrel.removeCount(amount);
 
-        player.inventory.add(newItem);
+        player.getInventory().add(newItem);
 
         if (!newItem.isEmpty()) {
             popResource(worldIn, pos.relative(state.getValue(PROPERTY_FACING)), newItem);
@@ -226,14 +236,14 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public void onRemove(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+    public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
             if (tileentity instanceof StorageBarrelTileEntity) {
                 ItemStack content = ((StorageBarrelTileEntity) tileentity).getBarrelContent();
                 while (!content.isEmpty()) {
                     ItemStack split = content.split(content.getMaxStackSize());
-                    InventoryHelper.dropItemStack(worldIn, pos.getX(), pos.getY(), pos.getZ(), split);
+                    Containers.dropItemStack(worldIn, pos.getX(), pos.getY(), pos.getZ(), split);
                 }
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
@@ -242,14 +252,14 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public BlockRenderType getRenderShape(BlockState state) {
-        return BlockRenderType.MODEL;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override
-    public void setPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+    public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         if (stack.hasCustomHoverName()) {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
             if (tileentity instanceof StorageBarrelTileEntity) {
                 ((StorageBarrelTileEntity) tileentity).setCustomName(stack.getDisplayName());
             }
@@ -262,7 +272,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState blockState, World worldIn, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos) {
         return calcRedstone((StorageBarrelTileEntity) worldIn.getBlockEntity(pos));
     }
 
@@ -271,7 +281,7 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
             return 0;
         }
         float percentage = (float) barrel.getBarrelContent().getCount() / (float) barrel.getSlotLimit(0);
-        return MathHelper.floor(percentage * 14F) + 1;
+        return Mth.floor(percentage * 14F) + 1;
     }
 
     @Override
@@ -285,37 +295,36 @@ public class StorageBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    protected void createBlockStateDefinition(StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(PROPERTY_FACING);
     }
 
     @Override
-    public BlockState getStateForPlacement(BlockItemUseContext context) {
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState().setValue(PROPERTY_FACING, context.getNearestLookingDirection().getOpposite());
     }
 
     @Nullable
     @Override
-    public TileEntity newBlockEntity(IBlockReader worldIn) {
+    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
         return new StorageBarrelTileEntity();
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return SHAPES.get(state.getValue(PROPERTY_FACING));
     }
 
     @Override
-    public ItemStack getPickBlock(BlockState state, RayTraceResult target, IBlockReader world, BlockPos pos, PlayerEntity player) {
-        if (((BlockRayTraceResult) target).getDirection().equals(state.getValue(PROPERTY_FACING))) {
-            StorageBarrelTileEntity barrel = (StorageBarrelTileEntity) world.getBlockEntity(pos);
+    public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
+        if (((BlockHitResult) target).getDirection().equals(state.getValue(PROPERTY_FACING))) {
+            StorageBarrelTileEntity barrel = (StorageBarrelTileEntity) level.getBlockEntity(pos);
             ItemStack stack = barrel.getBarrelContent().copy();
             if (!stack.isEmpty()) {
                 stack.setCount(1);
                 return stack;
             }
         }
-        return super.getPickBlock(state, target, world, pos, player);
+        return super.getCloneItemStack(state, target, level, pos, player);
     }
-
 }

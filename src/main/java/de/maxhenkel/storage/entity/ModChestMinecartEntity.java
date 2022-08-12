@@ -4,51 +4,54 @@ import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.ModDataSerializers;
 import de.maxhenkel.storage.blocks.ModBlocks;
 import de.maxhenkel.storage.blocks.ModChestBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.item.minecart.AbstractMinecartEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.IPacket;
-import net.minecraft.network.datasync.DataParameter;
-import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.*;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.*;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.AbstractMinecart;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 
-public class ModChestMinecartEntity extends AbstractMinecartEntity implements IInventory {
+public class ModChestMinecartEntity extends AbstractMinecart implements Container {
 
-    private static final DataParameter<Block> BLOCK = EntityDataManager.defineId(ModChestMinecartEntity.class, ModDataSerializers.BLOCK);
+    private static final EntityDataAccessor<Block> BLOCK = SynchedEntityData.defineId(ModChestMinecartEntity.class, ModDataSerializers.BLOCK);
 
     protected NonNullList<ItemStack> inventoryContents;
     private boolean dropContentsWhenDead = true;
     private BlockState cachedBlock;
 
-    public ModChestMinecartEntity(World world) {
+    public ModChestMinecartEntity(Level world) {
         super(ModEntities.CHEST_MINECART, world);
 
     }
@@ -96,18 +99,18 @@ public class ModChestMinecartEntity extends AbstractMinecartEntity implements II
     }
 
     @Override
-    public IPacket<?> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 
     @Override
-    public void startOpen(PlayerEntity player) {
-        level.playSound(null, getX(), getY(), getZ(), SoundEvents.CHEST_OPEN, SoundCategory.BLOCKS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+    public void startOpen(Player player) {
+        level.playSound(null, getX(), getY(), getZ(), SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
     }
 
     @Override
-    public void stopOpen(PlayerEntity player) {
-        level.playSound(null, getX(), getY(), getZ(), SoundEvents.CHEST_CLOSE, SoundCategory.BLOCKS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+    public void stopOpen(Player player) {
+        level.playSound(null, getX(), getY(), getZ(), SoundEvents.CHEST_CLOSE, SoundSource.BLOCKS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
     }
 
     @Override
@@ -116,8 +119,8 @@ public class ModChestMinecartEntity extends AbstractMinecartEntity implements II
     }
 
     @Override
-    public AbstractMinecartEntity.Type getMinecartType() {
-        return AbstractMinecartEntity.Type.CHEST;
+    public AbstractMinecart.Type getMinecartType() {
+        return AbstractMinecart.Type.CHEST;
     }
 
     @Override
@@ -126,21 +129,21 @@ public class ModChestMinecartEntity extends AbstractMinecartEntity implements II
     }
 
     @Override
-    public ItemStack getPickedResult(RayTraceResult target) {
+    public ItemStack getPickedResult(HitResult target) {
         return getItem().copy();
     }
 
 
     @Override
-    protected ITextComponent getTypeName() {
-        return new TranslationTextComponent("entity.storage_overhaul.chest_minecart_generic", getItem().getDisplayName());
+    protected Component getTypeName() {
+        return new TranslatableComponent("entity.storage_overhaul.chest_minecart_generic", getItem().getDisplayName());
     }
 
     @Override
     public void destroy(DamageSource source) {
         super.destroy(source);
         if (level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
-            InventoryHelper.dropContents(level, this, this);
+            Containers.dropContents(level, this, this);
             spawnAtLocation(getItem());
         }
     }
@@ -163,7 +166,7 @@ public class ModChestMinecartEntity extends AbstractMinecartEntity implements II
 
     @Override
     public ItemStack removeItem(int index, int count) {
-        return ItemStackHelper.removeItem(getInventoryContents(), index, count);
+        return ContainerHelper.removeItem(getInventoryContents(), index, count);
     }
 
     @Override
@@ -187,13 +190,9 @@ public class ModChestMinecartEntity extends AbstractMinecartEntity implements II
     }
 
     @Override
-    public boolean setSlot(int inventorySlot, ItemStack itemStackIn) {
-        if (inventorySlot >= 0 && inventorySlot < this.getContainerSize()) {
-            setItem(inventorySlot, itemStackIn);
-            return true;
-        } else {
-            return false;
-        }
+    public boolean canPlaceItem(int inventorySlot, ItemStack itemStackIn) {
+        //setItem(inventorySlot, itemStackIn);
+        return inventorySlot >= 0 && inventorySlot < this.getContainerSize();
     }
 
     @Override
@@ -201,68 +200,69 @@ public class ModChestMinecartEntity extends AbstractMinecartEntity implements II
     }
 
     @Override
-    public boolean stillValid(PlayerEntity player) {
-        if (removed) {
+    public boolean stillValid(Player player) {
+        if (isRemoved()) {
             return false;
         } else {
             return !(player.distanceToSqr(this) > 64.0D);
         }
     }
 
+
+
     @Nullable
     @Override
-    public Entity changeDimension(ServerWorld world) {
+    public Entity changeDimension(ServerLevel world) {
         this.dropContentsWhenDead = false;
         return super.changeDimension(world);
     }
 
     @Override
-    public void remove(boolean keepData) {
+    public void remove(RemovalReason removalReason) {
         if (!level.isClientSide && dropContentsWhenDead) {
-            InventoryHelper.dropContents(level, this, this);
+            Containers.dropContents(level, this, this);
         }
-
-        super.remove(keepData);
-        if (!keepData) itemHandler.invalidate();
+        super.remove(removalReason);
+        if (!removalReason.shouldSave()) itemHandler.invalidate();
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundNBT compound) {
+    protected void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
-        ItemStackHelper.saveAllItems(compound, getInventoryContents());
+        ContainerHelper.saveAllItems(compound, getInventoryContents());
         compound.putString("Block", getBlock().getBlock().getRegistryName().toString());
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundNBT compound) {
+    protected void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
         setBlock(ForgeRegistries.BLOCKS.getValue(new ResourceLocation(compound.getString("Block"))));
         inventoryContents = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
-        ItemStackHelper.loadAllItems(compound, inventoryContents);
+        ContainerHelper.loadAllItems(compound, inventoryContents);
     }
 
     @Override
-    public ActionResultType interact(PlayerEntity player, Hand hand) {
-        if (super.interact(player, hand).consumesAction()) return ActionResultType.SUCCESS;
-        player.openMenu(new INamedContainerProvider() {
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        if (super.interact(player, hand).consumesAction()) return InteractionResult.SUCCESS;
+        player.openMenu(new MenuProvider() {
             @Override
-            public ITextComponent getDisplayName() {
-                return new TranslationTextComponent(getBlock().getBlock().getDescriptionId());
+            public Component getDisplayName() {
+                return new TranslatableComponent(getBlock().getBlock().getDescriptionId());
             }
 
             @Nullable
             @Override
-            public Container createMenu(int id, PlayerInventory playerInventory, PlayerEntity player) {
+            public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player player) {
                 return getChestTier().getContainer(id, playerInventory, ModChestMinecartEntity.this);
             }
         });
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
     protected void applyNaturalSlowdown() {
         float motion = 0.98F;
-        int i = 15 - Container.getRedstoneSignalFromContainer(this);
+        int i = 15 - AbstractContainerMenu.getRedstoneSignalFromContainer(this);
         motion += (float) i * 0.001F;
 
         setDeltaMovement(getDeltaMovement().multiply(motion, 0D, motion));

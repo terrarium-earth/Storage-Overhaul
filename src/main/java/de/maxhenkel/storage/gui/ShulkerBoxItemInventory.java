@@ -2,18 +2,18 @@ package de.maxhenkel.storage.gui;
 
 import de.maxhenkel.corelib.inventory.ShulkerBoxInventory;
 import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEnitity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ShulkerBoxContainer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ShulkerBoxMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvent;
 
 import javax.annotation.Nullable;
 
 public class ShulkerBoxItemInventory extends ShulkerBoxInventory {
 
-    public ShulkerBoxItemInventory(PlayerEntity player, ItemStack shulkerBox) {
+    public ShulkerBoxItemInventory(Player player, ItemStack shulkerBox) {
         super(player, shulkerBox);
     }
 
@@ -29,8 +29,8 @@ public class ShulkerBoxItemInventory extends ShulkerBoxInventory {
 
     @Nullable
     @Override
-    public Container createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
-        return new ShulkerBoxContainer(i, playerInventory);
+    public AbstractContainerMenu createMenu(int i, Inventory playerInventory, Player playerEntity) {
+        return new ShulkerBoxMenu(i, playerInventory);
     }
 
 }

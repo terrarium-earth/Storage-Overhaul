@@ -2,26 +2,26 @@ package de.maxhenkel.storage.blocks.tileentity;
 
 import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.blocks.ModChestBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.WoodType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SUpdateTileEntityPacket;
-import net.minecraft.state.properties.ChestType;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.state.properties.WoodType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.Container;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.tileentity.*;
 import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
@@ -33,8 +33,18 @@ import net.minecraftforge.items.wrapper.InvWrapper;
 
 import javax.annotation.Nullable;
 
-@OnlyIn(value = Dist.CLIENT, _interface = IChestLid.class)
-public class ModChestTileEntity extends LockableLootTileEntity implements IChestLid, ITickableTileEntity {
+import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.LidBlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.entity.TickableBlockEntity;
+
+@OnlyIn(value = Dist.CLIENT, _interface = LidBlockEntity.class)
+public class ModChestTileEntity extends RandomizableContainerBlockEntity implements LidBlockEntity, TickableBlockEntity {
 
     @Nullable
     protected NonNullList<ItemStack> chestContents;
@@ -63,13 +73,13 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
     }
 
     @Override
-    protected Container createMenu(int id, PlayerInventory player) {
+    protected AbstractContainerMenu createMenu(int id, Inventory player) {
         return getTier().getContainer(id, player, this);
     }
 
     @Override
-    protected ITextComponent getDefaultName() {
-        return new TranslationTextComponent(getBlockState().getBlock().getDescriptionId());
+    protected Component getDefaultName() {
+        return new TranslatableComponent(getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
@@ -78,42 +88,42 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
     }
 
     @Override
-    public void load(BlockState blockState, CompoundNBT compound) {
+    public void load(BlockState blockState, CompoundTag compound) {
         super.load(blockState, compound);
         tier = ChestTier.byTier(compound.getInt("Tier"));
 
         chestContents = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
         if (!tryLoadLootTable(compound)) {
-            ItemStackHelper.loadAllItems(compound, chestContents);
+            ContainerHelper.loadAllItems(compound, chestContents);
         }
     }
 
     @Override
-    public CompoundNBT save(CompoundNBT compound) {
+    public CompoundTag save(CompoundTag compound) {
         super.save(compound);
 
         compound.putInt("Tier", getTier().getTier());
 
         if (!trySaveLootTable(compound)) {
-            ItemStackHelper.saveAllItems(compound, getItems());
+            ContainerHelper.saveAllItems(compound, getItems());
         }
 
         return compound;
     }
 
     @Override
-    public SUpdateTileEntityPacket getUpdatePacket() {
-        return new SUpdateTileEntityPacket(worldPosition, 1, getUpdateTag());
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return new ClientboundBlockEntityDataPacket(worldPosition, 1, getUpdateTag());
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
         load(getBlockState(), pkt.getTag());
     }
 
     @Override
-    public CompoundNBT getUpdateTag() {
-        return save(new CompoundNBT());
+    public CompoundTag getUpdateTag() {
+        return save(new CompoundTag());
     }
 
     @Override
@@ -158,7 +168,7 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
                 z += (double) direction.getStepZ() * 0.5D;
             }
 
-            level.playSound(null, x, y, z, soundIn, SoundCategory.BLOCKS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+            level.playSound(null, x, y, z, soundIn, SoundSource.BLOCKS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
         }
     }
 
@@ -173,7 +183,7 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
     }
 
     @Override
-    public void startOpen(PlayerEntity player) {
+    public void startOpen(Player player) {
         if (!player.isSpectator()) {
             if (numPlayersUsing < 0) {
                 numPlayersUsing = 0;
@@ -186,7 +196,7 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
     }
 
     @Override
-    public void stopOpen(PlayerEntity player) {
+    public void stopOpen(Player player) {
         if (!player.isSpectator()) {
             numPlayersUsing--;
             onOpenOrClose();
@@ -216,7 +226,7 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
     @OnlyIn(Dist.CLIENT)
     @Override
     public float getOpenNess(float partialTicks) {
-        return MathHelper.lerp(partialTicks, prevLidAngle, lidAngle);
+        return Mth.lerp(partialTicks, prevLidAngle, lidAngle);
     }
 
     @Override
@@ -251,10 +261,10 @@ public class ModChestTileEntity extends LockableLootTileEntity implements IChest
             if (state.getBlock() == ostate.getBlock()) {
                 ChestType otype = ostate.getValue(ModChestBlock.TYPE);
                 if (otype != ChestType.SINGLE && type != otype && state.getValue(ModChestBlock.FACING) == ostate.getValue(ModChestBlock.FACING)) {
-                    TileEntity ote = getLevel().getBlockEntity(opos);
+                    BlockEntity ote = getLevel().getBlockEntity(opos);
                     if (ote instanceof ModChestTileEntity) {
-                        IInventory top = type == ChestType.RIGHT ? this : (IInventory) ote;
-                        IInventory bottom = type == ChestType.RIGHT ? (IInventory) ote : this;
+                        Container top = type == ChestType.RIGHT ? this : (Container) ote;
+                        Container bottom = type == ChestType.RIGHT ? (Container) ote : this;
                         return new CombinedInvWrapper(new InvWrapper(top), new InvWrapper(bottom));
                     }
                 }

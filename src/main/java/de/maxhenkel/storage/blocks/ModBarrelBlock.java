@@ -4,31 +4,39 @@ import de.maxhenkel.corelib.block.IItemBlock;
 import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.Main;
 import de.maxhenkel.storage.blocks.tileentity.ModBarrelTileEntity;
-import net.minecraft.block.*;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.item.*;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.stats.Stats;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.Container;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.Random;
 
-public class ModBarrelBlock extends ContainerBlock implements IItemBlock {
+public class ModBarrelBlock extends BaseEntityBlock implements IItemBlock {
 
     public static final DirectionProperty PROPERTY_FACING = BlockStateProperties.FACING;
     public static final BooleanProperty PROPERTY_OPEN = BlockStateProperties.OPEN;
@@ -44,8 +52,8 @@ public class ModBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
-        TileEntity tileentity = worldIn.getBlockEntity(pos);
+    public void tick(BlockState state, ServerLevel worldIn, BlockPos pos, Random rand) {
+        BlockEntity tileentity = worldIn.getBlockEntity(pos);
         if (tileentity instanceof ModBarrelTileEntity) {
             ((ModBarrelTileEntity) tileentity).barrelTick();
         }
@@ -53,30 +61,30 @@ public class ModBarrelBlock extends ContainerBlock implements IItemBlock {
 
     @Override
     public Item toItem() {
-        return new BlockItem(this, new Item.Properties().tab(ItemGroup.TAB_DECORATIONS)).setRegistryName(getRegistryName());
+        return new BlockItem(this, new Item.Properties().tab(CreativeModeTab.TAB_DECORATIONS)).setRegistryName(getRegistryName());
     }
 
     @Override
-    public ActionResultType use(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
+    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         if (worldIn.isClientSide) {
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         } else {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
             if (tileentity instanceof ModBarrelTileEntity) {
                 player.openMenu((ModBarrelTileEntity) tileentity);
                 player.awardStat(Stats.OPEN_BARREL);
             }
 
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
     }
 
     @Override
-    public void onRemove(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+    public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
-            if (tileentity instanceof IInventory) {
-                InventoryHelper.dropContents(worldIn, pos, (IInventory) tileentity);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
+            if (tileentity instanceof Container) {
+                Containers.dropContents(worldIn, pos, (Container) tileentity);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
 
@@ -85,14 +93,14 @@ public class ModBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public BlockRenderType getRenderShape(BlockState state) {
-        return BlockRenderType.MODEL;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override
-    public void setPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+    public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         if (stack.hasCustomHoverName()) {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
             if (tileentity instanceof ModBarrelTileEntity) {
                 ((ModBarrelTileEntity) tileentity).setCustomName(stack.getDisplayName());
             }
@@ -105,8 +113,8 @@ public class ModBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState blockState, World worldIn, BlockPos pos) {
-        return Container.getRedstoneSignalFromBlockEntity(worldIn.getBlockEntity(pos));
+    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos) {
+        return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(worldIn.getBlockEntity(pos));
     }
 
     @Override
@@ -120,18 +128,18 @@ public class ModBarrelBlock extends ContainerBlock implements IItemBlock {
     }
 
     @Override
-    protected void createBlockStateDefinition(StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(PROPERTY_FACING, PROPERTY_OPEN);
     }
 
     @Override
-    public BlockState getStateForPlacement(BlockItemUseContext context) {
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState().setValue(PROPERTY_FACING, context.getNearestLookingDirection().getOpposite());
     }
 
     @Nullable
     @Override
-    public TileEntity newBlockEntity(IBlockReader worldIn) {
+    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
         return new ModBarrelTileEntity(tier);
     }
 }

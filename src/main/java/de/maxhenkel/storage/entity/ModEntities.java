@@ -3,8 +3,8 @@ package de.maxhenkel.storage.entity;
 import de.maxhenkel.corelib.CommonRegistry;
 import de.maxhenkel.storage.Main;
 import net.minecraft.client.renderer.entity.MinecartRenderer;
-import net.minecraft.entity.EntityClassification;
-import net.minecraft.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.RegistryEvent;
@@ -15,7 +15,7 @@ public class ModEntities {
     public static EntityType<ModChestMinecartEntity> CHEST_MINECART;
 
     public static void registerEntities(RegistryEvent.Register<EntityType<?>> event) {
-        CHEST_MINECART = CommonRegistry.registerEntity(Main.MODID, "chest_minecart", EntityClassification.MISC, ModChestMinecartEntity.class, builder -> {
+        CHEST_MINECART = CommonRegistry.registerEntity(Main.MODID, "chest_minecart", MobCategory.MISC, ModChestMinecartEntity.class, builder -> {
             builder.sized(0.98F, 0.7F);
         });
         event.getRegistry().register(CHEST_MINECART);

@@ -2,8 +2,8 @@ package de.maxhenkel.storage.gui;
 
 import de.maxhenkel.corelib.ClientRegistry;
 import de.maxhenkel.storage.Main;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.RegistryEvent;
@@ -12,30 +12,30 @@ import java.util.function.Supplier;
 
 public class Containers {
 
-    public static ContainerType<AdvancedShulkerboxContainer> SHULKERBOX_CONTAINER;
-    public static ContainerType<HugeChestContainer> GENERIC_18x3;
-    public static ContainerType<HugeChestContainer> GENERIC_18x4;
-    public static ContainerType<HugeChestContainer> GENERIC_18x5;
-    public static ContainerType<HugeChestContainer> GENERIC_18x6;
-    public static ContainerType<HugeChestContainer> GENERIC_18x7;
-    public static ContainerType<HugeChestContainer> GENERIC_18x8;
-    public static ContainerType<HugeChestContainer> GENERIC_18x9;
+    public static MenuType<AdvancedShulkerboxContainer> SHULKERBOX_CONTAINER;
+    public static MenuType<HugeChestContainer> GENERIC_18x3;
+    public static MenuType<HugeChestContainer> GENERIC_18x4;
+    public static MenuType<HugeChestContainer> GENERIC_18x5;
+    public static MenuType<HugeChestContainer> GENERIC_18x6;
+    public static MenuType<HugeChestContainer> GENERIC_18x7;
+    public static MenuType<HugeChestContainer> GENERIC_18x8;
+    public static MenuType<HugeChestContainer> GENERIC_18x9;
 
     @OnlyIn(Dist.CLIENT)
     public static void clientSetup() {
-        ClientRegistry.<AdvancedShulkerboxContainer, AdvancedShulkerboxScreen>registerScreen(SHULKERBOX_CONTAINER, AdvancedShulkerboxScreen::new);
+        ClientRegistry.registerScreen(SHULKERBOX_CONTAINER, AdvancedShulkerboxScreen::new);
 
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x3, HugeChestScreen::new);
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x4, HugeChestScreen::new);
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x5, HugeChestScreen::new);
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x6, HugeChestScreen::new);
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x7, HugeChestScreen::new);
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x8, HugeChestScreen::new);
-        ClientRegistry.<HugeChestContainer, HugeChestScreen>registerScreen(GENERIC_18x9, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x3, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x4, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x5, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x6, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x7, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x8, HugeChestScreen::new);
+        ClientRegistry.registerScreen(GENERIC_18x9, HugeChestScreen::new);
     }
 
-    public static void registerContainers(RegistryEvent.Register<ContainerType<?>> event) {
-        SHULKERBOX_CONTAINER = new ContainerType<>(AdvancedShulkerboxContainer::new);
+    public static void registerContainers(RegistryEvent.Register<MenuType<?>> event) {
+        SHULKERBOX_CONTAINER = new MenuType<>(AdvancedShulkerboxContainer::new);
         SHULKERBOX_CONTAINER.setRegistryName(new ResourceLocation(Main.MODID, "shulkerbox"));
         event.getRegistry().register(SHULKERBOX_CONTAINER);
 
@@ -48,8 +48,8 @@ public class Containers {
         GENERIC_18x9 = registerGeneric(event, 9, () -> GENERIC_18x9);
     }
 
-    private static ContainerType<HugeChestContainer> registerGeneric(RegistryEvent.Register<ContainerType<?>> event, int rows, Supplier<ContainerType<?>> te) {
-        ContainerType<HugeChestContainer> type = new ContainerType<>((id, inv) -> new HugeChestContainer(te.get(), id, inv, rows));
+    private static MenuType<HugeChestContainer> registerGeneric(RegistryEvent.Register<MenuType<?>> event, int rows, Supplier<MenuType<?>> te) {
+        MenuType<HugeChestContainer> type = new MenuType<>((id, inv) -> new HugeChestContainer(te.get(), id, inv, rows));
         type.setRegistryName(new ResourceLocation(Main.MODID, "generic_18x" + rows));
         event.getRegistry().register(type);
         return type;

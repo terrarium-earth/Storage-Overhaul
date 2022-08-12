@@ -2,11 +2,11 @@ package de.maxhenkel.storage;
 
 import de.maxhenkel.storage.gui.Containers;
 import de.maxhenkel.storage.gui.HugeChestContainer;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.container.ChestContainer;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.Container;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
 
 public enum ChestTier {
 
@@ -36,7 +36,7 @@ public enum ChestTier {
         return BASE_TIER;
     }
 
-    public Container getContainer(int id, PlayerInventory player, IInventory inventory) {
+    public AbstractContainerMenu getContainer(int id, Inventory player, Container inventory) {
         int slotCount = inventory.getContainerSize();
         int rows;
         if (slotCount % 18 == 0) {
@@ -58,16 +58,16 @@ public enum ChestTier {
             rows = slotCount / 9;
             switch (rows) {
                 case 3:
-                    return ChestContainer.threeRows(id, player, inventory);
+                    return ChestMenu.threeRows(id, player, inventory);
                 case 4:
-                    return new ChestContainer(ContainerType.GENERIC_9x4, id, player, inventory, 4);
+                    return new ChestMenu(MenuType.GENERIC_9x4, id, player, inventory, 4);
                 case 5:
-                    return new ChestContainer(ContainerType.GENERIC_9x5, id, player, inventory, 5);
+                    return new ChestMenu(MenuType.GENERIC_9x5, id, player, inventory, 5);
                 case 6:
-                    return ChestContainer.sixRows(id, player, inventory);
+                    return ChestMenu.sixRows(id, player, inventory);
             }
         }
 
-        return ChestContainer.threeRows(id, player, inventory);
+        return ChestMenu.threeRows(id, player, inventory);
     }
 }

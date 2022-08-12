@@ -3,29 +3,29 @@ package de.maxhenkel.storage.items;
 import de.maxhenkel.storage.gui.AdvancedShulkerboxContainer;
 import de.maxhenkel.storage.gui.ShulkerBoxItemInventory;
 import de.maxhenkel.storage.util.ShulkerBoxInventoryHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.DispenserBlock;
-import net.minecraft.dispenser.ShulkerBoxDispenseBehavior;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.World;
+import net.minecraft.core.Direction;
+import net.minecraft.core.dispenser.ShulkerBoxDispenseBehavior;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -38,35 +38,35 @@ public class AdvancedShulkerBoxItem extends BlockItem {
     }
 
     @Override
-    public ActionResultType place(BlockItemUseContext context) {
+    public InteractionResult place(BlockPlaceContext context) {
         if (context.getPlayer() != null && !context.getPlayer().isShiftKeyDown()) {
-            return ActionResultType.PASS;
+            return InteractionResult.PASS;
         }
         return super.place(context);
     }
 
     @Override
-    public ActionResult<ItemStack> use(World worldIn, PlayerEntity player, Hand handIn) {
+    public InteractionResultHolder<ItemStack> use(Level worldIn, Player player, InteractionHand handIn) {
         ItemStack stack = player.getItemInHand(handIn);
-        if (player instanceof ServerPlayerEntity) {
-            NetworkHooks.openGui((ServerPlayerEntity) player, new INamedContainerProvider() {
+        if (player instanceof ServerPlayer) {
+            NetworkHooks.openGui((ServerPlayer) player, new MenuProvider() {
                 @Override
-                public Container createMenu(int id, PlayerInventory playerInventory, PlayerEntity playerEntity) {
+                public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player playerEntity) {
                     return new AdvancedShulkerboxContainer(id, playerInventory, new ShulkerBoxItemInventory(player, stack));
                 }
 
                 @Override
-                public ITextComponent getDisplayName() {
+                public Component getDisplayName() {
                     return stack.getDisplayName();
                 }
             });
         }
-        return ActionResult.success(stack);
+        return InteractionResultHolder.success(stack);
     }
 
     @Nullable
     @Override
-    public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundNBT nbt) {
+    public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
         return new ICapabilityProvider() {
             @Nonnull
             @Override

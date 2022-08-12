@@ -1,10 +1,10 @@
 package de.maxhenkel.storage.blocks;
 
 import de.maxhenkel.storage.ChestTier;
-import net.minecraft.block.Block;
-import net.minecraft.block.WoodType;
-import net.minecraft.item.DyeColor;
-import net.minecraft.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.properties.WoodType;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.event.RegistryEvent;
 
 public class ModBlocks {

@@ -8,42 +8,42 @@ import de.maxhenkel.storage.blocks.tileentity.ModTileEntities;
 import de.maxhenkel.storage.items.render.ChestItemRenderer;
 import it.unimi.dsi.fastutil.floats.Float2FloatFunction;
 import net.minecraft.block.*;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.CatEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.inventory.DoubleSidedInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.INamedContainerProvider;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.Cat;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.CompoundContainer;
+import net.minecraft.world.Container;
+import net.minecraft.world.Containers;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.item.*;
-import net.minecraft.pathfinding.PathType;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.EnumProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.state.properties.ChestType;
+import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.Stats;
-import net.minecraft.tileentity.IChestLid;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityMerger;
+import net.minecraft.world.level.block.entity.LidBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.DoubleBlockCombiner;
 import net.minecraft.util.*;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -52,10 +52,32 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
-public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IItemBlock {
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SimpleWaterloggedBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.WoodType;
+import net.minecraftforge.client.IBlockRenderProperties;
 
-    public static final DirectionProperty FACING = HorizontalBlock.FACING;
+public class ModChestBlock extends BaseEntityBlock implements SimpleWaterloggedBlock, IItemBlock {
+
+    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final EnumProperty<ChestType> TYPE = BlockStateProperties.CHEST_TYPE;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
@@ -65,13 +87,13 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     protected static final VoxelShape SHAPE_EAST = Block.box(1D, 0D, 1D, 16D, 14D, 15D);
     protected static final VoxelShape SHAPE_SINGLE = Block.box(1D, 0D, 1D, 15D, 14D, 15D);
 
-    private static final TileEntityMerger.ICallback<ModChestTileEntity, Optional<INamedContainerProvider>> CALLBACK = new TileEntityMerger.ICallback<ModChestTileEntity, Optional<INamedContainerProvider>>() {
+    private static final DoubleBlockCombiner.Combiner<ModChestTileEntity, Optional<MenuProvider>> CALLBACK = new DoubleBlockCombiner.Combiner<ModChestTileEntity, Optional<MenuProvider>>() {
         @Override
-        public Optional<INamedContainerProvider> acceptDouble(final ModChestTileEntity iinventory1, ModChestTileEntity iinventory2) {
-            final IInventory iinventory = new DoubleSidedInventory(iinventory1, iinventory2);
-            return Optional.of(new INamedContainerProvider() {
+        public Optional<MenuProvider> acceptDouble(final ModChestTileEntity iinventory1, ModChestTileEntity iinventory2) {
+            final Container iinventory = new CompoundContainer(iinventory1, iinventory2);
+            return Optional.of(new MenuProvider() {
                 @Nullable
-                public Container createMenu(int id, PlayerInventory playerInventory, PlayerEntity player) {
+                public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player player) {
                     if (iinventory1.canOpen(player) && iinventory2.canOpen(player)) {
                         iinventory1.unpackLootTable(playerInventory.player);
                         iinventory2.unpackLootTable(playerInventory.player);
@@ -81,40 +103,40 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
                     }
                 }
 
-                public ITextComponent getDisplayName() {
+                public Component getDisplayName() {
                     if (iinventory1.hasCustomName()) {
                         return iinventory1.getDisplayName();
                     } else {
-                        return iinventory2.hasCustomName() ? iinventory2.getDisplayName() : new TranslationTextComponent("container.storage_overhaul.generic_large", iinventory1.getDisplayName());
+                        return iinventory2.hasCustomName() ? iinventory2.getDisplayName() : new TranslatableComponent("container.storage_overhaul.generic_large", iinventory1.getDisplayName());
                     }
                 }
             });
         }
 
         @Override
-        public Optional<INamedContainerProvider> acceptSingle(ModChestTileEntity tileEntity) {
+        public Optional<MenuProvider> acceptSingle(ModChestTileEntity tileEntity) {
             return Optional.of(tileEntity);
         }
 
         @Override
-        public Optional<INamedContainerProvider> acceptNone() {
+        public Optional<MenuProvider> acceptNone() {
             return Optional.empty();
         }
     };
 
-    private static final TileEntityMerger.ICallback<ModChestTileEntity, Optional<IInventory>> MERGER = new TileEntityMerger.ICallback<ModChestTileEntity, Optional<IInventory>>() {
+    private static final DoubleBlockCombiner.Combiner<ModChestTileEntity, Optional<Container>> MERGER = new DoubleBlockCombiner.Combiner<ModChestTileEntity, Optional<Container>>() {
         @Override
-        public Optional<IInventory> acceptDouble(ModChestTileEntity chest1, ModChestTileEntity chest2) {
-            return Optional.of(new DoubleSidedInventory(chest1, chest2));
+        public Optional<Container> acceptDouble(ModChestTileEntity chest1, ModChestTileEntity chest2) {
+            return Optional.of(new CompoundContainer(chest1, chest2));
         }
 
         @Override
-        public Optional<IInventory> acceptSingle(ModChestTileEntity chest) {
+        public Optional<Container> acceptSingle(ModChestTileEntity chest) {
             return Optional.of(chest);
         }
 
         @Override
-        public Optional<IInventory> acceptNone() {
+        public Optional<Container> acceptNone() {
             return Optional.empty();
         }
     };
@@ -142,37 +164,43 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
 
     @Override
     public Item toItem() {
-        return new BlockItem(this, new Item.Properties().tab(ItemGroup.TAB_DECORATIONS).setISTER(() -> renderer)).setRegistryName(getRegistryName());
+        return new BlockItem(this, new Item.Properties().tab(CreativeModeTab.TAB_DECORATIONS).setISTER(() -> renderer)).setRegistryName(getRegistryName());
     }
 
     @Override
-    public TileEntity newBlockEntity(IBlockReader worldIn) {
+    public void initializeClient(Consumer<IBlockRenderProperties> consumer) {
+        consumer.accept(new IBlockRenderProperties() {
+        });
+    }
+
+    @Override
+    public BlockEntity newBlockEntity(BlockGetter worldIn) {
         return new ModChestTileEntity(woodType, tier);
     }
 
     @Override
-    public INamedContainerProvider getMenuProvider(BlockState state, World worldIn, BlockPos pos) {
+    public MenuProvider getMenuProvider(BlockState state, Level worldIn, BlockPos pos) {
         return getMergerCallback(state, worldIn, pos, false).apply(CALLBACK).orElse(null);
     }
 
-    public static TileEntityMerger.Type getType(BlockState blockState) {
+    public static DoubleBlockCombiner.BlockType getType(BlockState blockState) {
         ChestType chesttype = blockState.getValue(TYPE);
         if (chesttype == ChestType.SINGLE) {
-            return TileEntityMerger.Type.SINGLE;
+            return DoubleBlockCombiner.BlockType.SINGLE;
         } else {
-            return chesttype == ChestType.RIGHT ? TileEntityMerger.Type.FIRST : TileEntityMerger.Type.SECOND;
+            return chesttype == ChestType.RIGHT ? DoubleBlockCombiner.BlockType.FIRST : DoubleBlockCombiner.BlockType.SECOND;
         }
     }
 
     @Override
-    public BlockRenderType getRenderShape(BlockState state) {
-        return BlockRenderType.ENTITYBLOCK_ANIMATED;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     @Override
-    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, IWorld worldIn, BlockPos currentPos, BlockPos facingPos) {
+    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
         if (stateIn.getValue(WATERLOGGED)) {
-            worldIn.getLiquidTicks().scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
+            worldIn.getFluidTicks().schedule(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
         }
 
         if (facingState.getBlock() == this && facing.getAxis().isHorizontal()) {
@@ -188,7 +216,7 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         if (state.getValue(TYPE) == ChestType.SINGLE) {
             return SHAPE_SINGLE;
         } else {
@@ -212,7 +240,7 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Override
-    public BlockState getStateForPlacement(BlockItemUseContext context) {
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
         ChestType chesttype = ChestType.SINGLE;
         Direction direction = context.getHorizontalDirection().getOpposite();
         FluidState ifluidstate = context.getLevel().getFluidState(context.getClickedPos());
@@ -244,15 +272,15 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
 
 
     @Nullable
-    private Direction getDirectionToAttach(BlockItemUseContext context, Direction direction) {
+    private Direction getDirectionToAttach(BlockPlaceContext context, Direction direction) {
         BlockState blockstate = context.getLevel().getBlockState(context.getClickedPos().relative(direction));
         return blockstate.getBlock() == this && blockstate.getValue(TYPE) == ChestType.SINGLE ? blockstate.getValue(FACING) : null;
     }
 
     @Override
-    public void setPlacedBy(World worldIn, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+    public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
         if (stack.hasCustomHoverName()) {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
             if (tileentity instanceof ModChestTileEntity) {
                 ((ModChestTileEntity) tileentity).setCustomName(stack.getDisplayName());
             }
@@ -260,11 +288,11 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Override
-    public void onRemove(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+    public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            TileEntity tileentity = worldIn.getBlockEntity(pos);
-            if (tileentity instanceof IInventory) {
-                InventoryHelper.dropContents(worldIn, pos, (IInventory) tileentity);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
+            if (tileentity instanceof Container) {
+                Containers.dropContents(worldIn, pos, (Container) tileentity);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
 
@@ -273,17 +301,17 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Override
-    public ActionResultType use(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
+    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         if (worldIn.isClientSide) {
-            return ActionResultType.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
-        INamedContainerProvider inamedcontainerprovider = getMenuProvider(state, worldIn, pos);
+        MenuProvider inamedcontainerprovider = getMenuProvider(state, worldIn, pos);
         if (inamedcontainerprovider != null) {
             player.openMenu(inamedcontainerprovider);
             player.awardStat(getOpenStat());
         }
 
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     protected Stat<ResourceLocation> getOpenStat() {
@@ -291,24 +319,24 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Nullable
-    public static IInventory getInventory(ModChestBlock chestBlock, BlockState blockState, World world, BlockPos blockPos, boolean p_226916_4_) {
+    public static Container getInventory(ModChestBlock chestBlock, BlockState blockState, Level world, BlockPos blockPos, boolean p_226916_4_) {
         return chestBlock.getMergerCallback(blockState, world, blockPos, p_226916_4_).apply(MERGER).orElse(null);
     }
 
-    public TileEntityMerger.ICallbackWrapper<? extends ModChestTileEntity> getMergerCallback(BlockState blockState, World world, BlockPos blockPos, boolean b) {
-        BiPredicate<IWorld, BlockPos> bipredicate;
+    public DoubleBlockCombiner.NeighborCombineResult<? extends ModChestTileEntity> getMergerCallback(BlockState blockState, Level world, BlockPos blockPos, boolean b) {
+        BiPredicate<LevelAccessor, BlockPos> bipredicate;
         if (b) {
             bipredicate = (world1, pos) -> false;
         } else {
             bipredicate = ModChestBlock::isBlocked;
         }
 
-        return TileEntityMerger.combineWithNeigbour(ModTileEntities.CHEST, ModChestBlock::getType, ModChestBlock::getDirectionToAttached, FACING, blockState, world, blockPos, bipredicate);
+        return DoubleBlockCombiner.combineWithNeigbour(ModTileEntities.CHEST, ModChestBlock::getType, ModChestBlock::getDirectionToAttached, FACING, blockState, world, blockPos, bipredicate);
     }
 
     @OnlyIn(Dist.CLIENT)
-    public static TileEntityMerger.ICallback<ModChestTileEntity, Float2FloatFunction> lidAngleCallback(final IChestLid lid) {
-        return new TileEntityMerger.ICallback<ModChestTileEntity, Float2FloatFunction>() {
+    public static DoubleBlockCombiner.Combiner<ModChestTileEntity, Float2FloatFunction> lidAngleCallback(final LidBlockEntity lid) {
+        return new DoubleBlockCombiner.Combiner<ModChestTileEntity, Float2FloatFunction>() {
             @Override
             public Float2FloatFunction acceptDouble(ModChestTileEntity chest1, ModChestTileEntity chest2) {
                 return (partialTicks) -> Math.max(chest1.getOpenNess(partialTicks), chest2.getOpenNess(partialTicks));
@@ -326,19 +354,19 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
         };
     }
 
-    public static boolean isBlocked(IWorld world, BlockPos blockPos) {
+    public static boolean isBlocked(LevelAccessor world, BlockPos blockPos) {
         return isBelowSolidBlock(world, blockPos) || isCatSittingOn(world, blockPos);
     }
 
-    private static boolean isBelowSolidBlock(IBlockReader reader, BlockPos pos) {
+    private static boolean isBelowSolidBlock(BlockGetter reader, BlockPos pos) {
         BlockPos blockpos = pos.above();
         return reader.getBlockState(blockpos).isRedstoneConductor(reader, blockpos);
     }
 
-    private static boolean isCatSittingOn(IWorld world, BlockPos pos) {
-        List<CatEntity> list = world.getEntitiesOfClass(CatEntity.class, new AxisAlignedBB(pos.getX(), pos.getY() + 1, pos.getZ(), pos.getX() + 1, pos.getY() + 2, pos.getZ() + 1));
+    private static boolean isCatSittingOn(LevelAccessor world, BlockPos pos) {
+        List<Cat> list = world.getEntitiesOfClass(Cat.class, new AABB(pos.getX(), pos.getY() + 1, pos.getZ(), pos.getX() + 1, pos.getY() + 2, pos.getZ() + 1));
         if (!list.isEmpty()) {
-            for (CatEntity catentity : list) {
+            for (Cat catentity : list) {
                 if (catentity.isOrderedToSit()) {
                     return true;
                 }
@@ -353,8 +381,8 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState blockState, World worldIn, BlockPos pos) {
-        return Container.getRedstoneSignalFromContainer(getInventory(this, blockState, worldIn, pos, false));
+    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos) {
+        return AbstractContainerMenu.getRedstoneSignalFromContainer(getInventory(this, blockState, worldIn, pos, false));
     }
 
     @Override
@@ -368,12 +396,12 @@ public class ModChestBlock extends ContainerBlock implements IWaterLoggable, IIt
     }
 
     @Override
-    protected void createBlockStateDefinition(StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, TYPE, WATERLOGGED);
     }
 
     @Override
-    public boolean isPathfindable(BlockState state, IBlockReader worldIn, BlockPos pos, PathType type) {
+    public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
         return false;
     }
 }

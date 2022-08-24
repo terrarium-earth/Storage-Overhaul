@@ -1,7 +1,7 @@
 package de.maxhenkel.storage.items.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEnitity;
+import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEntity;
 import de.maxhenkel.storage.blocks.tileentity.render.AdvancedShulkerBoxRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -13,11 +13,11 @@ import net.minecraft.world.item.ItemStack;
 public class AdvancedShulkerBoxItemRenderer extends BlockEntityWithoutLevelRenderer {
 
     private AdvancedShulkerBoxRenderer renderer;
-    private AdvancedShulkerBoxTileEnitity tileEntity;
+    private AdvancedShulkerBoxTileEntity tileEntity;
 
 
     public AdvancedShulkerBoxItemRenderer(DyeColor color) {
-        tileEntity = new AdvancedShulkerBoxTileEnitity(color);
+        tileEntity = new AdvancedShulkerBoxTileEntity(color);
     }
 
     @Override

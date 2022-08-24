@@ -2,10 +2,9 @@ package de.maxhenkel.storage.blocks;
 
 import de.maxhenkel.corelib.block.IItemBlock;
 import de.maxhenkel.storage.Main;
-import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEnitity;
+import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEntity;
 import de.maxhenkel.storage.items.AdvancedShulkerBoxItem;
 import de.maxhenkel.storage.items.render.AdvancedShulkerBoxItemRenderer;
-import net.minecraft.block.*;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.item.TooltipFlag;
@@ -14,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.item.*;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.nbt.CompoundTag;
@@ -22,11 +20,9 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.util.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.util.text.*;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.server.level.ServerLevel;
@@ -74,16 +70,17 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.UP));
     }
 
+    @Nullable
     @Override
-    public BlockEntity newBlockEntity(BlockGetter worldIn) {
-        return new AdvancedShulkerBoxTileEnitity(color);
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new AdvancedShulkerBoxTileEntity(color, pos, state);
     }
 
     private Callable renderer = () -> new AdvancedShulkerBoxItemRenderer(color);
 
     @Override
     public Item toItem() {
-        return new AdvancedShulkerBoxItem(this, new Item.Properties().stacksTo(1).tab(CreativeModeTab.TAB_DECORATIONS).setISTER(() -> renderer)).setRegistryName(getRegistryName());
+        return new AdvancedShulkerBoxItem(this, new Item.Properties().stacksTo(1).tab(CreativeModeTab.TAB_DECORATIONS)).setRegistryName(getRegistryName());
     }
 
     @Override
@@ -99,8 +96,8 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
             return InteractionResult.SUCCESS;
         } else {
             BlockEntity tileentity = worldIn.getBlockEntity(pos);
-            if (tileentity instanceof AdvancedShulkerBoxTileEnitity) {
-                AdvancedShulkerBoxTileEnitity box = (AdvancedShulkerBoxTileEnitity) tileentity;
+            if (tileentity instanceof AdvancedShulkerBoxTileEntity) {
+                AdvancedShulkerBoxTileEntity box = (AdvancedShulkerBoxTileEntity) tileentity;
 
                 if (box.canOpen()) {
                     player.openMenu(box);
@@ -127,8 +124,8 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
     @Override
     public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
         BlockEntity tileentity = world.getBlockEntity(pos);
-        if (tileentity instanceof AdvancedShulkerBoxTileEnitity) {
-            AdvancedShulkerBoxTileEnitity box = (AdvancedShulkerBoxTileEnitity) tileentity;
+        if (tileentity instanceof AdvancedShulkerBoxTileEntity) {
+            AdvancedShulkerBoxTileEntity box = (AdvancedShulkerBoxTileEntity) tileentity;
             if (player.isCreative() && !world.isClientSide && !box.isEmpty()) {
                 LootContext.Builder builder = new LootContext.Builder((ServerLevel) world)
                         .withRandom(world.random)
@@ -150,8 +147,8 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
     @Override
     public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder) {
         BlockEntity tileentity = builder.getParameter(LootContextParams.BLOCK_ENTITY);
-        if (tileentity instanceof AdvancedShulkerBoxTileEnitity) {
-            AdvancedShulkerBoxTileEnitity box = (AdvancedShulkerBoxTileEnitity) tileentity;
+        if (tileentity instanceof AdvancedShulkerBoxTileEntity) {
+            AdvancedShulkerBoxTileEntity box = (AdvancedShulkerBoxTileEntity) tileentity;
             builder = builder.withDynamicDrop(CONTENTS, (lootContext, stackConsumer) -> {
                 for (int i = 0; i < box.getContainerSize(); i++) {
                     stackConsumer.accept(box.getItem(i));
@@ -164,13 +161,13 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
     @Override
     public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
         BlockEntity tileentity = worldIn.getBlockEntity(pos);
-        if (tileentity instanceof AdvancedShulkerBoxTileEnitity) {
+        if (tileentity instanceof AdvancedShulkerBoxTileEntity) {
             if (stack.hasCustomHoverName()) {
-                ((AdvancedShulkerBoxTileEnitity) tileentity).setCustomName(stack.getDisplayName());
+                ((AdvancedShulkerBoxTileEntity) tileentity).setCustomName(stack.getDisplayName());
             }
             CompoundTag tag = stack.getTag();
             if (tag != null) {
-                ((AdvancedShulkerBoxTileEnitity) tileentity).readFromItemStackNbt(tag);
+                ((AdvancedShulkerBoxTileEntity) tileentity).readFromItemStackNbt(tag);
             }
         }
     }
@@ -179,7 +176,7 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
     public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tileentity = worldIn.getBlockEntity(pos);
-            if (tileentity instanceof AdvancedShulkerBoxTileEnitity) {
+            if (tileentity instanceof AdvancedShulkerBoxTileEntity) {
                 worldIn.updateNeighbourForOutputSignal(pos, state.getBlock());
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);
@@ -240,7 +237,7 @@ public class AdvancedShulkerBoxBlock extends BaseEntityBlock implements IItemBlo
     @Override
     public ItemStack getCloneItemStack(BlockGetter worldIn, BlockPos pos, BlockState state) {
         ItemStack itemstack = super.getCloneItemStack(worldIn, pos, state);
-        AdvancedShulkerBoxTileEnitity tileEntity = (AdvancedShulkerBoxTileEnitity) worldIn.getBlockEntity(pos);
+        AdvancedShulkerBoxTileEntity tileEntity = (AdvancedShulkerBoxTileEntity) worldIn.getBlockEntity(pos);
         CompoundTag compoundnbt = tileEntity.saveToNbt(new CompoundTag());
         if (!compoundnbt.isEmpty()) {
             itemstack.addTagElement("BlockEntityTag", compoundnbt);

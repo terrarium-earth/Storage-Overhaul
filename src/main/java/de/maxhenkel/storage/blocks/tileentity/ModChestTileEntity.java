@@ -16,10 +16,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.state.properties.ChestType;
-import net.minecraft.tileentity.*;
 import net.minecraft.util.*;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraftforge.api.distmarker.Dist;
@@ -41,10 +39,9 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
-import net.minecraft.world.level.block.entity.TickableBlockEntity;
 
 @OnlyIn(value = Dist.CLIENT, _interface = LidBlockEntity.class)
-public class ModChestTileEntity extends RandomizableContainerBlockEntity implements LidBlockEntity, TickableBlockEntity {
+public class ModChestTileEntity extends RandomizableContainerBlockEntity implements LidBlockEntity {
 
     @Nullable
     protected NonNullList<ItemStack> chestContents;
@@ -58,8 +55,8 @@ public class ModChestTileEntity extends RandomizableContainerBlockEntity impleme
     @Nullable
     protected ChestTier tier;
 
-    public ModChestTileEntity(WoodType woodType, ChestTier tier) {
-        super(ModTileEntities.CHEST);
+    public ModChestTileEntity(WoodType woodType, ChestTier tier, BlockPos pos, BlockState state) {
+        super(ModTileEntities.CHEST, pos, state);
         this.woodType = woodType;
         this.tier = tier;
     }
@@ -88,8 +85,8 @@ public class ModChestTileEntity extends RandomizableContainerBlockEntity impleme
     }
 
     @Override
-    public void load(BlockState blockState, CompoundTag compound) {
-        super.load(blockState, compound);
+    public void load(CompoundTag compound) {
+        super.load(compound);
         tier = ChestTier.byTier(compound.getInt("Tier"));
 
         chestContents = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
@@ -99,34 +96,35 @@ public class ModChestTileEntity extends RandomizableContainerBlockEntity impleme
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
 
         compound.putInt("Tier", getTier().getTier());
 
         if (!trySaveLootTable(compound)) {
             ContainerHelper.saveAllItems(compound, getItems());
         }
-
-        return compound;
     }
+
+
 
     @Override
     public ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return new ClientboundBlockEntityDataPacket(worldPosition, 1, getUpdateTag());
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        load(getBlockState(), pkt.getTag());
+        load(pkt.getTag());
     }
 
     @Override
     public CompoundTag getUpdateTag() {
-        return save(new CompoundTag());
+        CompoundTag compoundTag = new CompoundTag();
+        this.saveAdditional(compoundTag);
+        return compoundTag;
     }
 
-    @Override
     public void tick() {
         prevLidAngle = lidAngle;
         if (numPlayersUsing > 0 && lidAngle == 0F) {
@@ -153,7 +151,6 @@ public class ModChestTileEntity extends RandomizableContainerBlockEntity impleme
                 lidAngle = 0F;
             }
         }
-
     }
 
     private void playSound(SoundEvent soundIn) {
@@ -230,8 +227,8 @@ public class ModChestTileEntity extends RandomizableContainerBlockEntity impleme
     }
 
     @Override
-    public void clearCache() {
-        super.clearCache();
+    public void clearContent() {
+        super.clearContent();
         if (chestHandler != null) {
             chestHandler.invalidate();
             chestHandler = null;

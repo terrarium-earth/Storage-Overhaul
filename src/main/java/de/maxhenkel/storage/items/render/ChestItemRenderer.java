@@ -20,6 +20,7 @@ public class ChestItemRenderer extends BlockEntityWithoutLevelRenderer {
     private ModChestTileEntity tileEntity;
 
     public ChestItemRenderer(WoodType woodType, ChestTier tier) {
+        super();
         tileEntity = new ModChestTileEntity(woodType, tier);
     }
 

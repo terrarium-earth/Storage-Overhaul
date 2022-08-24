@@ -2,6 +2,7 @@ package de.maxhenkel.storage.blocks.tileentity;
 
 import de.maxhenkel.corelib.sound.SoundUtils;
 import de.maxhenkel.storage.blocks.AdvancedShulkerBoxBlock;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
@@ -36,7 +37,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
-public class AdvancedShulkerBoxTileEnitity extends RandomizableContainerBlockEntity implements WorldlyContainer, TickableBlockEntity {
+public class AdvancedShulkerBoxTileEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, TickableBlockEntity {
 
     private static final int[] SLOTS = IntStream.range(0, 27).toArray();
     private NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
@@ -49,8 +50,8 @@ public class AdvancedShulkerBoxTileEnitity extends RandomizableContainerBlockEnt
     @Nullable
     private DyeColor color;
 
-    public AdvancedShulkerBoxTileEnitity(DyeColor colorIn) {
-        super(ModTileEntities.SHULKER_BOX);
+    public AdvancedShulkerBoxTileEntity(DyeColor colorIn, BlockPos pos, BlockState state) {
+        super(ModTileEntities.SHULKER_BOX, pos, state);
         this.color = colorIn;
     }
 

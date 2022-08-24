@@ -3,7 +3,7 @@ package de.maxhenkel.storage.blocks.tileentity.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import de.maxhenkel.storage.blocks.AdvancedShulkerBoxBlock;
-import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEnitity;
+import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -16,7 +16,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
-public class AdvancedShulkerBoxRenderer extends BlockEntityRenderer<AdvancedShulkerBoxTileEnitity> {
+public class AdvancedShulkerBoxRenderer extends BlockEntityRenderer<AdvancedShulkerBoxTileEntity> {
     private final ModelPart base;
     private final ModelPart lid;
 
@@ -31,7 +31,7 @@ public class AdvancedShulkerBoxRenderer extends BlockEntityRenderer<AdvancedShul
     }
 
     @Override
-    public void render(AdvancedShulkerBoxTileEnitity box, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
+    public void render(AdvancedShulkerBoxTileEntity box, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
         Direction direction = Direction.UP;
         if (box.hasLevel()) {
             BlockState blockstate = box.getLevel().getBlockState(box.getBlockPos());

@@ -3,6 +3,7 @@ package de.maxhenkel.storage.blocks.tileentity;
 import de.maxhenkel.corelib.sound.SoundUtils;
 import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.blocks.ModBarrelBlock;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.player.Player;
@@ -34,8 +35,8 @@ public class ModBarrelTileEntity extends RandomizableContainerBlockEntity {
     @Nullable
     private ChestTier tier;
 
-    public ModBarrelTileEntity(ChestTier tier) {
-        super(ModTileEntities.BARREL);
+    public ModBarrelTileEntity(ChestTier tier, BlockPos pos, BlockState state) {
+        super(ModTileEntities.BARREL, pos, state);
         this.tier = tier;
     }
 

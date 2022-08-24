@@ -174,8 +174,8 @@ public class ModChestBlock extends BaseEntityBlock implements SimpleWaterloggedB
     }
 
     @Override
-    public BlockEntity newBlockEntity(BlockGetter worldIn) {
-        return new ModChestTileEntity(woodType, tier);
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new ModChestTileEntity(woodType, tier, pos, state);
     }
 
     @Override

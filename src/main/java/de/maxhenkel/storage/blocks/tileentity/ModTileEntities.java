@@ -20,10 +20,10 @@ public class ModTileEntities {
 
     public static BlockEntityType<StorageBarrelTileEntity> STORAGE_BARREL;
 
-    public static BlockEntityType<AdvancedShulkerBoxTileEnitity> SHULKER_BOX;
+    public static BlockEntityType<AdvancedShulkerBoxTileEntity> SHULKER_BOX;
 
     public static void registerTileEntities(RegistryEvent.Register<BlockEntityType<?>> event) {
-        CHEST = BlockEntityType.Builder.of(() -> new ModChestTileEntity(null, null),
+        CHEST = BlockEntityType.Builder.of((pos, state) -> new ModChestTileEntity(null, null, pos, state),
                 ModBlocks.OAK_CHEST,
                 ModBlocks.SPRUCE_CHEST,
                 ModBlocks.BIRCH_CHEST,
@@ -63,7 +63,7 @@ public class ModTileEntities {
         CHEST.setRegistryName(new ResourceLocation(Main.MODID, "chest"));
         event.getRegistry().register(CHEST);
 
-        BARREL = BlockEntityType.Builder.of(() -> new ModBarrelTileEntity(null),
+        BARREL = BlockEntityType.Builder.of((pos, state) -> new ModBarrelTileEntity(null, pos, state),
                 ModBlocks.OAK_BARREL,
                 ModBlocks.SPRUCE_BARREL,
                 ModBlocks.BIRCH_BARREL,
@@ -116,7 +116,7 @@ public class ModTileEntities {
         STORAGE_BARREL.setRegistryName(new ResourceLocation(Main.MODID, "storage_barrel"));
         event.getRegistry().register(STORAGE_BARREL);
 
-        SHULKER_BOX = BlockEntityType.Builder.of(() -> new AdvancedShulkerBoxTileEnitity(null),
+        SHULKER_BOX = BlockEntityType.Builder.of(() -> new AdvancedShulkerBoxTileEntity(null),
                 ModBlocks.WHITE_SHULKER_BOX,
                 ModBlocks.ORANGE_SHULKER_BOX,
                 ModBlocks.MAGENTA_SHULKER_BOX,

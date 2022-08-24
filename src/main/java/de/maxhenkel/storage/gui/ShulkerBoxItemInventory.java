@@ -1,7 +1,7 @@
 package de.maxhenkel.storage.gui;
 
 import de.maxhenkel.corelib.inventory.ShulkerBoxInventory;
-import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEnitity;
+import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -19,12 +19,12 @@ public class ShulkerBoxItemInventory extends ShulkerBoxInventory {
 
     @Override
     protected SoundEvent getOpenSound() {
-        return AdvancedShulkerBoxTileEnitity.getOpenSound();
+        return AdvancedShulkerBoxTileEntity.getOpenSound();
     }
 
     @Override
     protected SoundEvent getCloseSound() {
-        return AdvancedShulkerBoxTileEnitity.getCloseSound();
+        return AdvancedShulkerBoxTileEntity.getCloseSound();
     }
 
     @Nullable

@@ -139,7 +139,7 @@ public class ModBarrelBlock extends BaseEntityBlock implements IItemBlock {
 
     @Nullable
     @Override
-    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-        return new ModBarrelTileEntity(tier);
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new ModBarrelTileEntity(tier, pos, state);
     }
 }

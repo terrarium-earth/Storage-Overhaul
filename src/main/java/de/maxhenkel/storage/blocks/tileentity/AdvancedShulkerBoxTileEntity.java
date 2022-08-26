@@ -16,12 +16,10 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.world.level.block.entity.TickableBlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.util.*;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
@@ -37,7 +35,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
-public class AdvancedShulkerBoxTileEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, TickableBlockEntity {
+public class AdvancedShulkerBoxTileEntity extends RandomizableContainerBlockEntity implements WorldlyContainer {
 
     private static final int[] SLOTS = IntStream.range(0, 27).toArray();
     private NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
@@ -55,7 +53,6 @@ public class AdvancedShulkerBoxTileEntity extends RandomizableContainerBlockEnti
         this.color = colorIn;
     }
 
-    @Override
     public void tick() {
         progressOld = progress;
         switch (animationStatus) {
@@ -164,18 +161,8 @@ public class AdvancedShulkerBoxTileEntity extends RandomizableContainerBlockEnti
     }
 
     @Override
-    public void load(BlockState blockState, CompoundTag compound) {
-        super.load(blockState, compound);
-        loadFromNbt(compound);
-    }
-
-    @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
-        return saveToNbt(compound);
-    }
-
-    public void loadFromNbt(CompoundTag compound) {
+    public void load(CompoundTag compound) {
+        super.load(compound);
         items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
         if (!tryLoadLootTable(compound) && compound.contains("Items", 9)) {
             ContainerHelper.loadAllItems(compound, items);
@@ -186,14 +173,14 @@ public class AdvancedShulkerBoxTileEntity extends RandomizableContainerBlockEnti
         }
     }
 
-    public CompoundTag saveToNbt(CompoundTag compound) {
+    @Override
+    public void saveAdditional(CompoundTag compound) {
         if (!trySaveLootTable(compound)) {
             ContainerHelper.saveAllItems(compound, items, false);
         }
         if (enchantments != null) {
             compound.put("Enchantments", enchantments);
         }
-        return compound;
     }
 
     public void readFromItemStackNbt(CompoundTag nbtIn) {

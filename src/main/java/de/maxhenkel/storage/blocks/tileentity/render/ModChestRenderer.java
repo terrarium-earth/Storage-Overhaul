@@ -6,6 +6,7 @@ import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.blocks.ModBlocks;
 import de.maxhenkel.storage.blocks.ModChestBlock;
 import de.maxhenkel.storage.blocks.tileentity.ModChestTileEntity;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.ChestBlock;
@@ -45,7 +46,7 @@ public class ModChestRenderer extends ChestRenderer<ModChestTileEntity> {
     private final ModelPart leftLatchTier2;
     private final ModelPart leftLatchTier3;
 
-    public ModChestRenderer(BlockEntityRenderDispatcher rendererDispatcherIn) {
+    public ModChestRenderer(BlockEntityRendererProvider.Context rendererDispatcherIn) {
         super(rendererDispatcherIn);
         singleBottom = new ModelPart(64, 64, 0, 19);
         singleBottom.addBox(1F, 0F, 1F, 14F, 10F, 14F, 0F);

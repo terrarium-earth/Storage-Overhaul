@@ -3,6 +3,7 @@ package de.maxhenkel.storage.blocks.tileentity.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.storage.blocks.StorageBarrelBlock;
 import de.maxhenkel.storage.blocks.tileentity.StorageBarrelTileEntity;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -23,7 +24,7 @@ public class StorageBarrelRenderer extends BlockEntityRenderer<StorageBarrelTile
     private final ItemRenderer itemRenderer;
     private Minecraft minecraft;
 
-    public StorageBarrelRenderer(BlockEntityRenderDispatcher renderer) {
+    public StorageBarrelRenderer(BlockEntityRendererProvider.Context renderer) {
         super(renderer);
         minecraft = Minecraft.getInstance();
         itemRenderer = minecraft.getItemRenderer();

@@ -53,21 +53,19 @@ public class ModBarrelTileEntity extends RandomizableContainerBlockEntity {
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
 
         compound.putInt("Tier", getTier().getTier());
 
         if (!trySaveLootTable(compound)) {
             ContainerHelper.saveAllItems(compound, getItems());
         }
-
-        return compound;
     }
 
     @Override
-    public void load(BlockState blockState, CompoundTag compound) {
-        super.load(blockState, compound);
+    public void load(CompoundTag compound) {
+        super.load(compound);
 
         tier = ChestTier.byTier(compound.getInt("Tier"));
 
@@ -115,10 +113,7 @@ public class ModBarrelTileEntity extends RandomizableContainerBlockEntity {
     }
 
     public void barrelTick() {
-        int x = worldPosition.getX();
-        int y = worldPosition.getY();
-        int z = worldPosition.getZ();
-        numPlayersUsing = ChestBlockEntity.getOpenCount(level, this, x, y, z);
+        numPlayersUsing = ChestBlockEntity.getOpenCount(level, this.getBlockPos());
         if (numPlayersUsing > 0) {
             scheduleTick();
         } else {

@@ -3,6 +3,7 @@ package de.maxhenkel.storage.blocks.tileentity;
 import de.maxhenkel.corelib.entity.EntityUtils;
 import de.maxhenkel.corelib.item.ItemUtils;
 import de.maxhenkel.storage.Main;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +21,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
@@ -33,8 +35,8 @@ public class StorageBarrelTileEntity extends BlockEntity implements IItemHandler
 
     private Map<UUID, Long> clicks;
 
-    public StorageBarrelTileEntity() {
-        super(ModTileEntities.STORAGE_BARREL);
+    public StorageBarrelTileEntity(BlockPos pos, BlockState state) {
+        super(ModTileEntities.STORAGE_BARREL, pos, state);
         clicks = new HashMap<>();
     }
 
@@ -60,24 +62,19 @@ public class StorageBarrelTileEntity extends BlockEntity implements IItemHandler
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
-
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
         compound.put("Item", ItemUtils.writeOverstackedItem(new CompoundTag(), barrelContent));
 
         if (this.customName != null) {
             compound.putString("CustomName", Component.Serializer.toJson(customName));
         }
-
-        return compound;
     }
 
     @Override
-    public void load(BlockState blockState, CompoundTag compound) {
-        super.load(blockState, compound);
+    public void load(@NotNull CompoundTag compound) {
+        super.load(compound);
         barrelContent = ItemUtils.readOverstackedItem(compound.getCompound("Item"));
-
-
         if (compound.contains("CustomName")) {
             customName = Component.Serializer.fromJson(compound.getString("CustomName"));
         }

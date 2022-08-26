@@ -7,7 +7,6 @@ import de.maxhenkel.storage.blocks.tileentity.ModChestTileEntity;
 import de.maxhenkel.storage.blocks.tileentity.ModTileEntities;
 import de.maxhenkel.storage.items.render.ChestItemRenderer;
 import it.unimi.dsi.fastutil.floats.Float2FloatFunction;
-import net.minecraft.block.*;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Cat;
@@ -20,7 +19,6 @@ import net.minecraft.world.Container;
 import net.minecraft.world.Containers;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.item.*;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -33,7 +31,6 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.DoubleBlockCombiner;
-import net.minecraft.util.*;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
@@ -160,11 +157,9 @@ public class ModChestBlock extends BaseEntityBlock implements SimpleWaterloggedB
         return tier;
     }
 
-    private Callable renderer = () -> new ChestItemRenderer(woodType, tier);
-
     @Override
     public Item toItem() {
-        return new BlockItem(this, new Item.Properties().tab(CreativeModeTab.TAB_DECORATIONS).setISTER(() -> renderer)).setRegistryName(getRegistryName());
+        return new BlockItem(this, new Item.Properties().tab(CreativeModeTab.TAB_DECORATIONS)).setRegistryName(getRegistryName());
     }
 
     @Override
@@ -199,10 +194,6 @@ public class ModChestBlock extends BaseEntityBlock implements SimpleWaterloggedB
 
     @Override
     public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
-        if (stateIn.getValue(WATERLOGGED)) {
-            worldIn.getFluidTicks().schedule(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
-        }
-
         if (facingState.getBlock() == this && facing.getAxis().isHorizontal()) {
             ChestType chesttype = facingState.getValue(TYPE);
             if (stateIn.getValue(TYPE) == ChestType.SINGLE && chesttype != ChestType.SINGLE && stateIn.getValue(FACING) == facingState.getValue(FACING) && getDirectionToAttached(facingState) == facing.getOpposite()) {

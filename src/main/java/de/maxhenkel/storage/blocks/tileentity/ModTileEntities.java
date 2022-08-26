@@ -5,12 +5,13 @@ import de.maxhenkel.storage.blocks.ModBlocks;
 import de.maxhenkel.storage.blocks.tileentity.render.AdvancedShulkerBoxRenderer;
 import de.maxhenkel.storage.blocks.tileentity.render.ModChestRenderer;
 import de.maxhenkel.storage.blocks.tileentity.render.StorageBarrelRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
 
 public class ModTileEntities {
 
@@ -140,10 +141,10 @@ public class ModTileEntities {
 
     @OnlyIn(Dist.CLIENT)
     public static void clientSetup() {
-        ClientRegistry.bindTileEntityRenderer(ModTileEntities.CHEST, ModChestRenderer::new);
+        BlockEntityRenderers.register(ModTileEntities.CHEST, ModChestRenderer::new);
 
-        ClientRegistry.bindTileEntityRenderer(ModTileEntities.SHULKER_BOX, AdvancedShulkerBoxRenderer::new);
+        BlockEntityRenderers.register(ModTileEntities.SHULKER_BOX, AdvancedShulkerBoxRenderer::new);
 
-        ClientRegistry.bindTileEntityRenderer(ModTileEntities.STORAGE_BARREL, StorageBarrelRenderer::new);
+        BlockEntityRenderers.register(ModTileEntities.STORAGE_BARREL, StorageBarrelRenderer::new);
     }
 }

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import de.maxhenkel.storage.blocks.AdvancedShulkerBoxBlock;
 import de.maxhenkel.storage.blocks.tileentity.AdvancedShulkerBoxTileEntity;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -20,7 +21,7 @@ public class AdvancedShulkerBoxRenderer extends BlockEntityRenderer<AdvancedShul
     private final ModelPart base;
     private final ModelPart lid;
 
-    public AdvancedShulkerBoxRenderer(BlockEntityRenderDispatcher renderer) {
+    public AdvancedShulkerBoxRenderer(BlockEntityRendererProvider.Context renderer) {
         super(renderer);
         base = new ModelPart(64, 64, 0, 28);
         lid = new ModelPart(64, 64, 0, 0);

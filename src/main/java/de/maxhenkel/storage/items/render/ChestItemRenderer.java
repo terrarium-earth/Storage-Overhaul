@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.storage.ChestTier;
 import de.maxhenkel.storage.blocks.tileentity.ModChestTileEntity;
 import de.maxhenkel.storage.blocks.tileentity.render.ModChestRenderer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.state.properties.WoodType;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -20,7 +21,7 @@ public class ChestItemRenderer extends BlockEntityWithoutLevelRenderer {
     private ModChestTileEntity tileEntity;
 
     public ChestItemRenderer(WoodType woodType, ChestTier tier) {
-        super();
+        super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
         tileEntity = new ModChestTileEntity(woodType, tier);
     }
 
